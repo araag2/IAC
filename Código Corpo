@@ -1,1 +1,24 @@
+;criacao da rotina que faz o espaco de jogo
+
+ORIG 0000h
+MOV R1,FFFFh
+MOV M[FFFCh],R1  ;inicializaçao janela de texto
+MOV R1,0
+MOV R2,0 ;registo que vai alterando R1 pq vai ser usado o seu bit mais e menos significativo
+MOV R3,'#'  ;caractere que vai ser escrito na janela de texto
+
+linha1:MVBL R1,R2  ;vai atualizando o cursor para passar a proxima posicao da linha
+MOV M[FFFCh],R1    ;aponta posicao na linha
+MOV M[FFFEh],R3    ;escreve # na posicao
+ADD R2,1
+CMP R2,0050h ;verifica se ja terminou a primeira linha 
+BR.Z proximo
+CMP R2,1750h  ;verifica se ja terminou a segunda linha
+BR.Z Fim ;
+BR linha1
+
+proximo: MOV R2,1700h;atualiza o valor de R2 para a proxima coluna
+MOV R1,R2
+BR linha1
+Fim: BR Fim
 
