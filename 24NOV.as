@@ -1,5 +1,5 @@
 ;=============================================
-;I- Criacao da rotina que faz o espaco de jogo
+;I- Constantes e Variáveis
 ;=============================================
        IO_WRITE      EQU FFFEh
 	   IO_READ       EQU FFFCh
@@ -12,6 +12,9 @@
 	   CountTimer	 EQU 0000h ;variavel.permite escrever de 1 em 1 seg
 	   Tiro			 EQU '-'
 	   Apaga		 EQU ' '  ;constante utilizada para limpar ecra
+	   ORIG 6000h ;000000000000000000000000atencao
+	   Prepare_se	STR 'Prepare-se@'
+	   PrimaIE	STR 'Prima o botao IE'
 ;=============================================
 ;II-Tabela referente a cada interrupcao
 ;=============================================	   
@@ -76,6 +79,29 @@ Nave: MOV R1,0303h       ;Coordenadas da nave, quarta linha terceira coluna
 	  ENI
 	  MOV R7,0
       BR Ciclo
+;======================================================
+;Incicio de Jogo
+;======================================================
+Inicio: CMP R7,14
+	BR.Z Ciclo
+	BR EscMensagem
+EscMensagem:  
+EscString:      MOV     R2, M[Prepare_se]   				; Apontador para inicio da "string"
+                MOV     R3, M[6000h] 			    ; Localizacao do primeiro carater
+CicloEsc:       MOV     M[IO_READ], R3
+                MOV     R1, M[R2] ;
+                CMP     R1, FIM_TEXTO
+                BR.Z    FimEsc
+		MOV R5, 0B28h
+		MOV M[IO_READ],R5
+				
+                MOV     M[IO_WRITE], R1			
+                INC     R2
+                INC     R3
+		INC 	R5 ;aponta o apontador para o proximo lugar a escrver
+                BR      CicloEsc
+  FimEsc: BR Inicio 
+	
 	  
 ========================================================
 ; IV-Ciclo De Jogo
