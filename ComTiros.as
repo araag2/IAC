@@ -13,7 +13,7 @@
 	 Vazio			 EQU ' '
 	 Asteroide		 EQU '*'
 	 BuracoNegro	 EQU 'O'
-	 Pontuacao	 EQU 0
+	 Pontuacao	 WORD 0
 ;=============================================
 ;I.I- Definição de Strings
 ;=============================================
@@ -52,11 +52,12 @@ INT15                WORD Tempo
         MOV M[IO_READ],R3  ;inicializacao janela de texto
  GameRestart: MOV	R7,INT_BEGIN_MASK
 		      MOV	M[INT_MASK_ADDR],R7
+		      MOV M[Pontuacao],R0 ;reeinicia a pontuacao
               ENI
               CALL StartScreen
- GameStart:   CMP R7,5
-		      BR.Z GameStart2
-              BR GameStart
+ GameStart:   	CMP R7,5
+		BR.Z GameStart2
+             	 BR GameStart
 			
 			
 			
@@ -424,6 +425,9 @@ Espera:		CMP M[Clock_F],1
 		JMP.Z E_Tempo
 		BR	Espera ;aguarda pelo tempo do proximo tiro
 
-	 
+;=======================================
+;Display -pontuacao
+;=======================================
+
 	 
 	 
