@@ -13,6 +13,7 @@
 	 Vazio			 EQU ' '
 	 Asteroide		 EQU '*'
 	 BuracoNegro	 EQU 'O'
+	 Pontuacao	 EQU 0
 ;=============================================
 ;I.I- Definição de Strings
 ;=============================================
@@ -404,6 +405,7 @@ Bum: 		CMP R1,M[Asteroide]
 Clear:  	MOV M[IO_READ],R1 ;o asteroide e destruido
 		MOV R2,M[Vazio]
 		MOV M[IO_WRITE],R2
+		INC M[Pontuacao] ;a pontuacao e atualizada
 		POP R3
 		POP R2
 		POP R1
