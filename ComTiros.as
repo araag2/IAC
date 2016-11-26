@@ -362,9 +362,11 @@ AcabouEsc: POP R1
 		   POP R3
 		   POP R4
 		   RET
-;====================================
+;==============================================================
 ;Tiros - Rotina que trata dos disparos
-;====================================
+;compara se o espaco e branco. se nao for
+;ve se destroi o asteroide ou se desaparece com o buraco negro
+;==============================================================
 
 Tiros_F: 	INC M[Tiros_F]
 		RTI
@@ -395,14 +397,15 @@ E_Tempo:	MOV M[IO_WRITE], R2
 		BR Progressao
 
 Bum: 		CMP R1,M[Asteroide]
-		BR.Z Clear
+		BR.Z Destroi
 		CMP R1, M[BuracoNegro]
 		BR.Z Subsiste
 		CMP R1,M[Pos_nave]
 		BR.Z GameRestart  ;NO FUTURO DEVEM SER COMPARADAS TODAS AS POSICOES DA NAVE E DEVE SER FEITO O BR PARA O ENDGAME
+		
 
 	 
-Clear:  	MOV M[IO_READ],R1 ;o asteroide e destruido
+Desctroi:  	MOV M[IO_READ],R1 ;o asteroide e destruido
 		MOV R2,M[Vazio]
 		MOV M[IO_WRITE],R2
 		INC M[Pontuacao] ;a pontuacao e atualizada
