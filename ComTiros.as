@@ -137,7 +137,7 @@ Next:			POP R2
 ComecaRelog: PUSH R1
              MOV		R1,1
 			 MOV		M[IniciaClock],R1
-			 MOV		R1,1
+			 MOV		R1,5
 			 MOV		M[VelocidadeClock],R1
 			 POP R1
 			 RET
@@ -285,9 +285,9 @@ RestartGame: CALL LimparJanela
 Tempo:      PUSH	R1
 			MOV		R1,1
 			MOV		M[IniciaClock],R1
-			MOV		R1,1
+			MOV		R1,5
 			MOV		M[VelocidadeClock],R1
-			INC 	M[Clock_F]
+			INC 		M[Clock_F]
 			POP		R1 
             RTI 			
 					
@@ -377,9 +377,7 @@ Tiros:  	DEC M[Tiros_F]
 		MOV R2, M[TiroFisico]
 		MOV M[IO_WRITE],R2
 		CALL Progressao
-		POP R2
-		POP R1
-		RTI
+		
 
 Progressao:     INC R1 ;vai para a posicao em frente do tiro
 		CMP R1,M[Vazio]
@@ -389,23 +387,38 @@ Progressao:     INC R1 ;vai para a posicao em frente do tiro
 		CMP R3,0079h
 		BR.Z Clear
 		MOV M[IO_READ],R1
-		MOV M[IO_WRITE], R2
+		CMP M[Clock_F],1
+		BR.NZ Espera
+E_Tempo:	MOV M[IO_WRITE], R2
+		MOV M[Clock_F],R0 ;reinicia o contador
 		BR Progressao
 
 Bum: 		CMP R1,M[Asteroide]
 		BR.Z Clear
 		CMP R1, M[BuracoNegro]
 		BR.Z Subsiste
+		CMP R1,M[Pos_nave]
+		BR.Z GameRestart  ;NO FUTURO DEVEM SER COMPARADAS TODAS AS POSICOES DA NAVE E DEVE SER FEITO O BR PARA O ENDGAME
 
 	 
-Clear:  	MOV M[IO_READ],R1
+Clear:  	MOV M[IO_READ],R1 ;o asteroide e destruido
 		MOV R2,M[Vazio]
 		MOV M[IO_WRITE],R2
+		POP R3
+		POP R2
+		POP R1
 		RET
-Subsiste: 	MOV M[IO_READ],R1
+Subsiste: 	MOV M[IO_READ],R1  ;o buraco negro 'come' o tiro
 		MOV R2,M[BuracoNegro]
 		MOV M[IO_WRITE],R2
+		POP R3
+		POP R2
+		POP R1
 		RET
+Espera:		CMP M[Clock_F],1
+		JMP.Z E_Tempo
+		BR	Espera ;aguarda pelo tempo do proximo tiro
+
 	 
 	 
 	 
