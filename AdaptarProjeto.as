@@ -197,8 +197,8 @@ ComecaRelog: PUSH R1
 		  CALL.Z RestartGame
 		  CMP M[Clock_F1],R0
 		  CALL.NZ CicloClockF1
-		  CMP M[Clock_F2],R0
-		  CALL.NZ CicloClockF2
+	;	  CMP M[Clock_F2],R0
+	;	  CALL.NZ CicloClockF2
 		  JMP Ciclo
 ;=======================================================
 ; V-Rotinas referentes a cada interrupcao 
@@ -210,16 +210,88 @@ CicloClockF1: DEC M[Ciclos]
                     CMP M[Ciclos],R0
 					CALL.Z CriaObjetos
 ;					CALL MexeTiros
-;					CALL MexeObjetos
+                    CMP	M[NumeroAsteroides],R0
+  				CALL.NZ MexeObjetos
 					MOV M[Clock_F1],R0						
 					RET
 ;=========================
 ; Ciclo de Clock F2
 ;=========================
-CicloClockF2:  CALL MexeTiros
-                      MOV M[Clock_F2], R0
-					  RET
+;CicloClockF2:  CALL MexeTiros
+ ;                     MOV M[Clock_F2], R0
+;					  RET
 
+;================================
+; Ciclo que mexe os asteroides e os buracos negros
+;================================				  
+MexeObjetos: DSI
+                     PUSH R1
+                     PUSH R2
+				     PUSH R3
+					 PUSH R4
+					 PUSH R5
+					 PUSH R6
+                     MOV R2,Asteroides
+                     MOV R1,M[NumeroAsteroides]
+MexeObjetos1:CMP R1,0
+                      BR.Z MexeObjetos3
+					  CMP M[R2],R0
+					  BR.Z MexeObjetos2
+					  MOV R3,0
+					  MVBL R3,M[R2]
+					  CMP R3,0
+					  BR.Z ApagaAsteroide
+					  CALL ResetAsteroide
+					  DEC M[R2]
+					  CALL DesenhaAsteroide
+					  DEC R1
+MexeObjetos2: INC R2
+                       BR MexeObjetos1
+MexeObjetos3: Call MexeBuracos
+                       POP R6
+                       POP R5
+					   POP R4
+					   POP R3
+					   POP R2
+					   POP R1
+					   ENI
+                       RET
+
+ResetAsteroide: MOV R4,Vazio
+                        MOV R3,M[R2]
+                        MOV M[IO_READ],R3
+                        MOV M[IO_WRITE],R4
+                        RET
+
+ApagaAsteroide: CALL ResetAsteroide
+                         MOV M[R2],R0
+                         DEC R1
+                         DEC M[NumeroAsteroides]
+						 BR MexeObjetos2
+						 
+ApagaBuraco: CALL ResetAsteroide
+					 MOV M[R2],R0
+                      DEC R1
+                      DEC M[NumeroBuracosNegros]
+                      BR MexeBuracos2					  
+						 
+MexeBuracos: MOV R2,BuracosNegros
+                     MOV  R1,M[NumeroBuracosNegros]
+MexeBuracos1:CMP R1,0
+                      BR.Z MexeBuracosFim
+                      CMP M[R2],R0	
+                      BR.Z MexeBuracos2
+					  MOV R3,0
+					  MVBL R3,M[R2]
+					  CMP R3,0
+					  BR.Z ApagaBuraco
+					  CALL ResetAsteroide
+					  DEC M[R2]
+					  CALL DesenhaBuraco
+					  DEC R1
+MexeBuracos2: INC R2
+                      BR MexeBuracos1
+MexeBuracosFim: RET					  
 ;=========================
 ; Cria os Objetos do Ecrã
 ;=========================
@@ -246,14 +318,14 @@ EndCycle:	    POP R6
                     RET
 					
 ;=========================
-; Cria os Asteroides
+; Cria os Asteroides 
 ;=========================					
  CriaAsteroide:       MOV R4,R0
                     MVBH R4,M[Object_Spawn]
                     ADD R4, 78
 					DEC		M[ContadorBuracoNegro]
 			        CMP		M[ContadorBuracoNegro],R0
-			        BR.Z	CriaBuraco
+			        JMP.Z	CriaBuraco
 					MOV R2,Asteroides
 CriaAsteroideNext:CMP M[R2],R0
                        BR.Z CriaAsteroideEnd
@@ -264,15 +336,17 @@ CriaAsteroideEnd:	MOV M[R2],R4
                        INC M[NumeroAsteroides]					   
 				       RET
 					
-DesenhaAsteroide: MOV R5,Asteroide
-                            MOV M[IO_READ],R4
-							INC M[NumeroAsteroides]
+DesenhaAsteroide: MOV R3,M[R2]
+                            MOV R5,Asteroide
+                            MOV M[IO_READ],R3
 							MOV M[IO_WRITE],R5
                             RET
-							
-DesenhaBuraco:    MOV R5,BuracoNegro
-                            MOV M[IO_READ],R4
-							INC M[NumeroAsteroides]
+;=========================
+; Cria os Buracos Negros
+;=========================											
+DesenhaBuraco:    MOV R3,M[R2]
+                            MOV R5,BuracoNegro
+                            MOV M[IO_READ],R3
 							MOV M[IO_WRITE],R5
                             RET							
 							
@@ -281,7 +355,7 @@ CreateBuracoNext:   		CMP M[R2],R0
 									BR.Z CreateBuracoEnd
 									INC R2
 									BR CreateBuracoNext
-CreateBuracoEnd: 			MOV M[R2],R1
+CreateBuracoEnd: 			MOV M[R2],R4
                                     CALL DesenhaBuraco
                                     INC M[NumeroBuracosNegros]
                                     MOV R1,4
