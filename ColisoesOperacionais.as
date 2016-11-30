@@ -31,7 +31,6 @@
 	  NumeroAsteroides 		WORD 0
 	  NumeroBuracosNegros WORD 0
 	  Ciclos                          WORD 5
-	  Random                       WORD 1236
       Object_Spawn		        WORD	0100h
 	  ContadorBuracoNegro  WORD  4
 	  ContadorMoveAsteroide WORD 10
@@ -41,6 +40,8 @@
 	  Game_Over_F             WORD  0
 	  InitialMessage  			STR 'Prepare-se@'
 	  InitialMessage2 			STR 'Prima o botao IE@'
+	  GameOverMessage1     STR 'GameOver Pontuacao:@'
+	  GameOverMessage2     STR 'Prima IE Para recomecar@'
 	   ESCR_LCD		 			EQU	FFF5h
 	  APONT_LCD	 			EQU	FFF4h
 	  Pos_nave					EQU	5000h  ;sitio onde vamos estar constantemente a atualizar a pos
@@ -77,24 +78,47 @@ INT15                WORD Tempo
 					  MOV M[Pontuacao],R0 ;reeinicia a pontuacao
 					  ENI
 					  CALL StartScreen
+GameOverStart: CALL LimpaObjectos
  GameStart:    CMP R7,5
 		              BR.Z GameStart2
 				      INC M[RandomORG]
              	      BR GameStart
-
+					  
 GameOver: INC M[Game_Over_F]			  
                   RET
 				  
-GameOver2:CALL LimparJanela
+GameOver2: CALL LimparJanela
                    MOV M[Game_Over_F],R0
-                   JMP GameRestart				  
+                   JMP GameRestart2				  
 			
-			
+GameRestart2:MOV	R7,INT_BEGIN_MASK
+					  MOV	M[INT_MASK_ADDR],R7
+					  MOV M[Pontuacao],R0 ;reeinicia a pontuacao
+					  ENI
+                      CALL GameOverScreen
+                      JMP GameOverStart					  
 			
  GameStart2:  CALL LimparJanela
                       BR EscreverJanela
- 
- 
+					  
+LimpaObjectos: PUSH R1
+                       PUSH R2
+                       PUSH R3
+					   MOV M[NumeroAsteroides],R0
+					   MOV M[NumeroBuracosNegros],R0
+                       MOV R3,60
+					   MOV R2, Asteroides
+Limpa2:		   MOV M[R2],R0
+					   DEC R3
+					   INC R2
+					   CMP R3,R0
+					   BR.Z AcabaLimpeza
+					   BR Limpa2
+AcabaLimpeza: POP R3
+                       POP R2
+                       POP R1
+					   RET
+					                         					   
 ;==============================================
 ;Escrever a Janela de Texto
 ;==============================================	
@@ -109,9 +133,9 @@ linha1: MVBL R1,R2  ;vai atualizando o cursor para passar a proxima posicao da l
            MOV M[IO_READ],R1    ;aponta posicao na linha
            MOV M[IO_WRITE],R3    ;escreve # na posicao
            ADD R2,1
-           CMP R2,0050h ;verifica se ja terminou a primeira linha 
+           CMP R2,004Fh ;verifica se ja terminou a primeira linha 
            BR.Z proximo
-           CMP R2,1750h  ;verifica se ja terminou a segunda linha
+           CMP R2,174Fh  ;verifica se ja terminou a segunda linha
            BR.Z Nave ;
            BR linha1
 		
@@ -132,6 +156,33 @@ Nave: MOV R1,0303h       ;Coordenadas da nave, quarta linha terceira coluna
 	     MOV R7,0
 	     CALL ComecaRelog
          JMP Ciclo
+;==============================================
+;Escreve a Mensagem Final
+;==============================================	
+	  
+GameOverScreen:             MOV R2, 0A1Fh
+							   MOV R3, GameOverMessage1
+ContinuaAEscrever4:   MOV M[IO_READ],R2
+							   MOV R4,M[R3]
+							   CMP R4, AcabaString
+							   BR.Z ContinuaAEscrever5
+							   MOV M[IO_WRITE],R4
+							   INC R2
+							   INC R3
+							   BR ContinuaAEscrever4
+ContinuaAEscrever5: MOV R2, 0C1Bh
+							    MOV R3, GameOverMessage2
+ContinuaAEscrever6: MOV M[IO_READ],R2
+							   MOV R4,M[R3]
+							   CMP R4, AcabaString
+							   BR.Z Acaba
+							   MOV M[IO_WRITE],R4
+							   INC R2
+							   INC R3
+							   BR ContinuaAEscrever6
+Acaba:                     RET		 
+		 
+		 
 
 ;==============================================
 ;Escreve a Mensagem Inicial
@@ -152,12 +203,12 @@ ContinuaAEscrever2: MOV R2, 0C1Bh
 ContinuaAEscrever3: MOV M[IO_READ],R2
 							   MOV R4,M[R3]
 							   CMP R4, AcabaString
-							   BR.Z Acaba
+							   BR.Z Acaba2
 							   MOV M[IO_WRITE],R4
 							   INC R2
 							   INC R3
 							   BR ContinuaAEscrever3
-Acaba:                     RET
+Acaba2:                     RET
 
 ;==============================================
 ;Limpa a Janela por completo
@@ -413,15 +464,15 @@ CreateBuracoEnd: 			MOV M[R2],R4
 ;=========================
 ; Ciclo Random
 ;=========================
-Randomize:   MOV		R1,M[Random]
-			        MOV		R2,M[Random]
+Randomize:   MOV		R1,M[RandomORG]
+			        MOV		R2,M[RandomORG]
 			        AND		R2,0001h
 			        CMP 	R2,R0
 			        BR.Z	    Randomize1
 			        MOV		R2,Mascara_Random
 			        XOR		R1,R2
 Randomize1:	ROR		R1,1
-			        MOV		M[Random],R1
+			        MOV		M[RandomORG],R1
 			        MOV		R2,1600h
 			        DIV		R1,R2
 			        ADD		R2,0100h
