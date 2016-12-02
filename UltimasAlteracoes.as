@@ -69,7 +69,7 @@ INT15                WORD Tempo
 ;III- Criar a Janela, as linhas e a Nave
 ;==============================================
 ;==============================================
-;Inicia a Janela de Testo
+;Inicia a Janela de Texto
 ;==============================================	  	   
 		ORIG 0000h
 		MOV R6, FDFFh
@@ -78,7 +78,9 @@ INT15                WORD Tempo
         MOV M[IO_READ],R3  ;inicializacao janela de texto
 		
 ;==============================================
-;Começa ou recomeça o Jogo
+;Começa ou recomeça o Jogo:rotina que uma vez
+;chamada reinicia ou começa o jogo limpando
+;os vestigios do jogo anterior se for reset
 ;==============================================	  		
  GameRestart: MOV	R7,INT_BEGIN_MASK
 					  MOV	M[INT_MASK_ADDR],R7
@@ -130,7 +132,8 @@ AcabaLimpeza: POP R3
 					   RET
 					                         					   
 ;==============================================
-;Escrever a Janela de Texto
+;Escrever a Janela de Texto :rotina que escreve 
+;o espaco de jogo
 ;==============================================	
  EscreverJanela:	MOV	R7,INT_MASK
 							MOV	M[INT_MASK_ADDR],R7
@@ -153,7 +156,8 @@ proximo: MOV R2,1700h ;atualiza o valor de R2 para a proxima coluna
               MOV R1,R2
               BR linha1
 ;==============================================
-;Escreve a Nave inicialmente
+;Escreve a Nave inicialmente: rotina que uma vez
+;chamada desenha a nave na sua posicao inicial
 ;==============================================	
 
 Nave: MOV R1,0303h       ;Coordenadas da nave, quarta linha terceira coluna  
@@ -167,7 +171,8 @@ Nave: MOV R1,0303h       ;Coordenadas da nave, quarta linha terceira coluna
 	     CALL ComecaRelog
          JMP Ciclo
 ;==============================================
-;Escreve a Mensagem Final
+;Escreve a Mensagem Final: rotina que uma vez chamada
+;escreve a mensagem de fim de jogo e cham
 ;==============================================	
 	  
 GameOverScreen:             MOV R2, 0A1Fh
@@ -175,7 +180,7 @@ GameOverScreen:             MOV R2, 0A1Fh
 ContinuaAEscrever4:   MOV M[IO_READ],R2
 							   MOV R4,M[R3]
 							   CMP R4, AcabaString
-							   BR.Z ContinuaAEscrever5
+							   JMP.Z STRPontuacao
 							   MOV M[IO_WRITE],R4
 							   INC R2
 							   INC R3
@@ -191,10 +196,61 @@ ContinuaAEscrever6: MOV M[IO_READ],R2
 							   INC R3
 							   BR ContinuaAEscrever6
 Acaba:                     RET		 
-		 
+;===============================================
+;Screen Pontuacao Final:subrotina que e chamada
+;no final de jogo que escreve no ecra a pontuacao
+;final do jogador
+;=================================================
+STRPontuacao:	PUSH R1
+				PUSH R5
+				PUSH R3
+				PUSH R4
+				PUSH R6 
+				MOV R6,4
+				ADD R2,3 ;proxima posicao da janela
+				MOV R1,M[Pontuacao]
+AquiPont:		MOV R5,R1
+				MOV R3,0010h
+				DIV R5,R3
+NumeroD:		CMP R3,000Ah
+				JMP.Z HexaEspecial2
+				CMP R3,000Bh
+				JMP.Z HexaEspecial2
+				CMP R3,000Ch
+				JMP.Z HexaEspecial2
+				CMP R3,000Dh
+				JMP.Z HexaEspecial2
+				CMP R3,000Eh
+				JMP.Z HexaEspecial2
+				CMP R3,000Fh
+				JMP.Z HexaEspecial2
+				ADD R3,0030h
+				BR EscrevePon
+EscrevePon:		CMP R6,0
+				BR.Z AcabouSTRPontuacao
+				MOV M[IO_READ],R2
+				MOV M[IO_WRITE],R3
+				DEC R2
+				DEC R6
+				BR ProximoValor
+HexaEspecial2:			ADD R3,0037h	;faz a conversao necessaria para  ascii dos valores A,B,C,D,E e F
+				BR EscrevePon	
+ProximoValor:			SHR R1,4
+				MOV R3,0010h
+				JMP AquiPont
+AcabouSTRPontuacao: 			POP R6
+					POP R4
+					POP R3
+					POP R5
+					POP R1
+					JMP ContinuaAEscrever5		
 		 
 ;==============================================
-;Escreve a Mensagem Inicial
+;Escreve a Mensagem Inicial:rotina que escreve a
+;mensagem de inicio de jogo
+;Entradas:strings das mensagens
+;Saidas: ---
+;Efeitos: escrita na janela de texto da informacao
 ;==============================================	
 	  
 StartScreen:             MOV R2, 0A1Fh
@@ -220,6 +276,9 @@ ContinuaAEscrever3: MOV M[IO_READ],R2
 Acaba2:                     RET
 ;==============================================
 ;Limpa a Janela por completo
+;Entradas: espaco em branco que limpa a janela
+;Saidas:-----
+;Efeitos: Limpeza completa da janela de texto
 ;==============================================	
 LimparJanela:   PUSH R1
                 PUSH R2				 
@@ -237,6 +296,9 @@ Next:			POP R2
 				
 ;====================================
 ; Começa o Relógio
+;Entradas: frequencia da velocidade do clock
+;Saidas:-----
+;Efeitos: comeco do timer
 ;====================================	
 ComecaRelog: PUSH R1
              MOV		R1,1
@@ -247,7 +309,12 @@ ComecaRelog: PUSH R1
 			 RET
 				
 ;========================================================
-; IV-Ciclo De Jogo
+; IV-Ciclo De Jogo:trata do tratamento de cada uma das
+;interrupcoes possiveis no jogo
+;Entradas:Cada uma das interrupcoes
+;	(tiros,movimentacao da nave,comando de restart, e clocks)
+;Saidas:----
+;Efeitos: tratamento de cada uma das flags das interrupcoes
 ;=======================================================	
    Ciclo: CMP M[Baixo_F],R0
           CALL.NZ Baixo_Rotina
@@ -272,7 +339,10 @@ ComecaRelog: PUSH R1
 ; V-Rotinas referentes a cada interrupcao 
 ;=======================================================
 ;=========================
-; Ciclo de Clock F1
+; Ciclo de Clock F1: relativo ao temporizador da movimentacao dos asteroides e tiros
+;Entrada: valor da frequencia do clock F1
+;Saidas:------
+;Efeitos: tratamanento dos tempos certos para o tratamento das subrotinas associadas
 ;=========================
 CicloClockF1: DEC M[Ciclos]
                     CMP M[Ciclos],R0
@@ -287,7 +357,10 @@ CicloClockF1: DEC M[Ciclos]
 					RET
 					
 ;=========================
-; Ciclo de Clock F2
+; Ciclo de Clock F2:relativo ao temporizador da movimentacao dos tiros
+;Entrada: valor da frequencia do clock F2
+;Saidas:------
+;Efeitos: tratamanento dos tempos certos para o tratamento das subrotinas associadas
 ;=========================
 CicloClockF2:  CMP M[Tiro_Existe],R0
                      CALL.NZ MexeTiros
@@ -296,7 +369,10 @@ CicloClockF2:  CMP M[Tiro_Existe],R0
 					CALL ApagaLeds
 					 RET
 ;=========================
-; Colisoes
+; Colisoes:rotina que verifica se houve colisao da nave com algum objeto (asteroide e buraco negro)
+;Entrada:posicao dos asteroides e buracos negros
+;Saidas: branch para o fim de jogo se houver colisao
+;Efeitos:--
 ;=========================
 Colisoes:    					PUSH R1
 									PUSH R2
@@ -333,6 +409,9 @@ EndColisoes:					POP R6
 				 
 ;================================
 ; Ciclo que mexe os asteroides e os buracos negros
+;Entrada: Posicao de cada obstaculo(asteroides e buracos negros)
+;Saidas:atualizacao da posicao dos obstaculos 
+;Efeitos: atualizacao dos valores nas posicoes de memoria relativas as posicoes
 ;================================				  
 MexeObjetos:PUSH R1
                      PUSH R2
@@ -399,7 +478,10 @@ MexeBuracos2: INC R2
                       JMP MexeBuracos1
 MexeBuracosFim: RET					  
 ;=========================
-; Cria os Objetos do Ecrã
+; Cria os Objetos do Ecrã (asteroides e buracos negros)
+;Entrada: valores de criacao de objetos random
+;Saidas: atualizacao de numero de objetos no ecra
+;Efeitos: aparecimento de obstaculos no espaco de jogo
 ;=========================
 CriaObjetos:  PUSH R1
                     PUSH R2
