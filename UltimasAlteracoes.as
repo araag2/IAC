@@ -337,6 +337,9 @@ ComecaRelog: PUSH R1
 		  JMP Ciclo
 ;=======================================================
 ; V-Rotinas referentes a cada interrupcao 
+;Entradas: interrupcoes
+;Saidas:rotina de tratamento de cada interrupcao
+;Efeitos:depende de cada interrupcao
 ;=======================================================
 ;=========================
 ; Ciclo de Clock F1: relativo ao temporizador da movimentacao dos asteroides e tiros
@@ -368,12 +371,13 @@ CicloClockF2:  CMP M[Tiro_Existe],R0
                      MOV M[Clock_F2],R0	
 					CALL ApagaLeds
 					 RET
-;=========================
+;=====================================================================================================
 ; Colisoes:rotina que verifica se houve colisao da nave com algum objeto (asteroide e buraco negro)
 ;Entrada:posicao dos asteroides e buracos negros
 ;Saidas: branch para o fim de jogo se houver colisao
 ;Efeitos:--
-;=========================
+;=====================================================================================================
+
 Colisoes:    					PUSH R1
 									PUSH R2
 									PUSH R3
@@ -407,12 +411,12 @@ EndColisoes:					POP R6
 									POP R1
 									RET
 				 
-;================================
+;==============================================================================
 ; Ciclo que mexe os asteroides e os buracos negros
 ;Entrada: Posicao de cada obstaculo(asteroides e buracos negros)
 ;Saidas:atualizacao da posicao dos obstaculos 
 ;Efeitos: atualizacao dos valores nas posicoes de memoria relativas as posicoes
-;================================				  
+;==============================================================================				  
 MexeObjetos:PUSH R1
                      PUSH R2
 				     PUSH R3
@@ -455,10 +459,10 @@ ApagaAsteroide: CALL ResetAsteroide
 						 BR MexeObjetos2
 						 
 ApagaBuraco:  CALL ResetAsteroide
-					  MOV M[R2],R0
-                      DEC R1
-                      DEC M[NumeroBuracosNegros]
-                      JMP MexeBuracos2					  
+			MOV M[R2],R0
+                      	DEC R1
+                      	DEC M[NumeroBuracosNegros]
+                      	JMP MexeBuracos2					  
 						 
 MexeBuracos: MOV R2,BuracosNegros
                      MOV  R1,M[NumeroBuracosNegros]
@@ -477,12 +481,12 @@ MexeBuracos1:CMP R1,0
 MexeBuracos2: INC R2
                       JMP MexeBuracos1
 MexeBuracosFim: RET					  
-;=========================
+;======================================================
 ; Cria os Objetos do Ecrã (asteroides e buracos negros)
 ;Entrada: valores de criacao de objetos random
 ;Saidas: atualizacao de numero de objetos no ecra
 ;Efeitos: aparecimento de obstaculos no espaco de jogo
-;=========================
+;======================================================
 CriaObjetos:  PUSH R1
                     PUSH R2
 					PUSH R3
@@ -505,9 +509,12 @@ EndCycle:	    POP R6
 					POP R1
                     RET
 					
-;=========================
-; Cria os Asteroides 
-;=========================					
+;=================================================================================
+; Cria os Asteroides
+;Entrada:posicao do proximo asteroide
+;Saidas:atualizacao do numero de asteroides no ecra
+;Efeitos:aparecimento em posicao especificada pela funcao random do asteroide
+;==================================================================================					
  CriaAsteroide:       MOV R4,R0
                     MVBH R4,M[Object_Spawn]
                     ADD R4, 78
@@ -529,9 +536,12 @@ DesenhaAsteroide: MOV R3,M[R2]
                             MOV M[IO_READ],R3
 							MOV M[IO_WRITE],R5
                             RET
-;=========================
+;=================================================================================
 ; Cria os Buracos Negros
-;=========================											
+;Entrada:posicao do proximo buraco negro
+;Saidas:atualizacao do numero de buracos negros no ecra
+;Efeitos:aparecimento em posicao especificada pela funcao random
+;=================================================================================											
 DesenhaBuraco:  MOV R3,M[R2]
                             MOV R5,BuracoNegro
                             MOV M[IO_READ],R3
@@ -549,9 +559,12 @@ CreateBuracoEnd: 			MOV M[R2],R4
                                     MOV R1,4
                                     MOV M[ContadorBuracoNegro],R1
                                     RET									
-;=========================
+;==============================================
 ; Ciclo Random
-;=========================
+;Entrada:-----
+;Saidas: posicao e decisao do proximo objeto
+;Efeitos: Atualizacao da memoria do random
+;==============================================
 Randomize:   MOV		R1,M[RandomORG]
 			        MOV		R2,M[RandomORG]
 			        AND		R2,0001h
@@ -568,11 +581,19 @@ Randomize1:	ROR		R1,1
 			        RET
 ;=========================
 ;Restarta o jogo
+;Entrada:---
+;Saidas:--------
+;Efeitos:Reinicio do Jogo
 ;=========================	   
 Restart: MOV R7,5
          RTI
+	 
 ;=========================
 ;Mexe a Nave para baixo
+
+;Entrada:posicao da nave
+;Saida:atualizacao da posicao da nave
+;Efeitos: deslocacao da nave para baixo
 ;=========================
 Baixo:       INC M[Baixo_F]
              RTI 
@@ -591,6 +612,9 @@ FicaNoSitio: MOV R7,0
 			 
 ;=========================
 ; Mexe a Nave para cima
+;Entrada:posicao da nave
+;Saida:atualizacao da posicao da nave
+;Efeitos: deslocacao da nave para cima
 ;=========================
 Cima:        INC M[Cima_F]
              RTI 
@@ -604,9 +628,12 @@ Cima_Rotina: DEC M[Cima_F]
              CALL CriaNave
    			 RET
 			 
-;===========================
+;=================================================
 ;Mexe a Nave para a esquerda
-;===========================
+;Entrada:posicao da nave
+;Saida:atualizacao da posicao da nave
+;Efeitos: deslocacao da nave para a esquerda
+;==================================================
 Esquerda:    INC M[Esquerda_F]
              RTI 
 Esquerda_Rotina:DEC M[Esquerda_F]
@@ -618,9 +645,12 @@ Esquerda_Rotina:DEC M[Esquerda_F]
 			 CALL Colisoes
              CALL CriaNave		 
              RET
-;=========================
+;==================================================
 ;Mexe a Nave para a direita
-;=========================
+;Entrada:posicao da nave
+;Saida:atualizacao da posicao da nave
+;Efeitos: deslocacao da nave para a direita
+;===================================================
 Direita:     INC M[Direita_F]
              RTI 
 Direita_Rotina:DEC M[Direita_F]
@@ -633,9 +663,12 @@ Direita_Rotina:DEC M[Direita_F]
 			 CALL Colisoes
              CALL CriaNave			 
              RET		 
-;=========================
-;Destroi a Nave atual
-;=========================
+;==========================================================
+;Destroi a Nave atual-rotina chamada para destruir a nave
+;Entrada: posicao das componentes da nave
+;Saidas:----
+;Efeito:desaparecimento da nave da janela de texto
+;=========================================================
 DestroiNave:  MOV M[IO_READ],R1          ;Destroi a nave
 	          MOV M[IO_WRITE],R6
 	          ADD R1, 0100h
@@ -650,9 +683,12 @@ DestroiNave:  MOV M[IO_READ],R1          ;Destroi a nave
 	          SUB R1, 0200h
 			  RET
 			  
-;===========================
-;Cria a Nave na nova posição
-;===========================
+;=====================================================================================
+;Cria a Nave na nova posição-rotina chamada para construir a nave na nova posicao
+;Entrada: nova posicao da nave
+;Saidas:---
+;Efeitos: aparecimento da nave na janela de texto na posicao
+;=====================================================================================
 CriaNave:     MOV M[IO_READ],R1  ;Criar a nave
 	          MOV M[IO_WRITE],R2
               ADD R1, 0100h	   
@@ -670,9 +706,12 @@ CriaNave:     MOV M[IO_READ],R1  ;Criar a nave
 			  CALL EscLCD
 			  RET
 			  
-;====================================
-; Recomeça o jogo
-;====================================	     			  
+;===========================================================
+; Recomeça o jogo: uma vez chamada trata de recomecar o jogo
+;Entradas:----
+;Saidas:-------
+;Efeitos: chama rotina que trata do reinicio do jogo
+;===========================================================	     			  
 RestartGame: CALL LimparJanela
              MOV R7,0
              JMP GameRestart
@@ -693,10 +732,13 @@ Tempo:      PUSH	R1
 			     POP		R1 
                  RTI 			
 							   
-;====================================
+;================================================
 ;LCD - Rotina que escreve no LCD a 
-;posicao da nave
-;====================================
+;posicao da nave em tempo real
+;Entrada:posicao da nave
+;Saidas:-------
+;Efeitos:escrita no LCD dos valores da posicao em
+;================================================
 EscLCD: PUSH R4
 		PUSH R3
 		PUSH R2
@@ -720,14 +762,14 @@ SacaDigito:	MOV R2,R4
 		JMP.Z HexaEspecial
 		ADD R3,0030h
 		BR Escreve
-Escreve:MOV M[APONT_LCD],R1 
+Escreve:	MOV M[APONT_LCD],R1 
 		MOV M[ESCR_LCD],R3
 		BR AtualizaPont
 AtualizaPont:	CMP R1,FFC0h  ;update do ponteiro 
 		BR.Z AcabouEsc
 		DEC R1
 		BR AtualizaRegisto
-AtualizaRegisto: SHR R4,4
+AtualizaRegisto: 		 SHR R4,4
 				 MOV R3,0010h
 				 JMP SacaDigito
 HexaEspecial: ADD R3,0037h
@@ -741,6 +783,9 @@ AcabouEsc: POP R1
 ;Tiros - Rotina que trata dos disparos
 ;compara se o espaco e branco. se nao for
 ;ve se destroi o asteroide ou se desaparece com o buraco negro
+;Entradas:posicao a frente da nave
+;Saidas:Flag do tiro no ecra e acionada
+;Efeitos:aparecimento do tiro na janela de texto
 ;==============================================================
 ;==============================================================
 ;Rotina de Interrupção Tiro
@@ -757,7 +802,7 @@ Tiro: INC M[Tiros_F]
 ;Saída: Cria o tira na Janela de Texto
 ;==============================================================
 Tiros:  CMP M[Tiro_Existe],R0
-          CALL.Z CriaTiro
+        CALL.Z CriaTiro
 		  MOV M[Tiros_F],R0
 		  RET
 		  
@@ -811,6 +856,16 @@ SaiFora:		    PUSH R1
 SaiFora2:			  POP R2
 						  POP R1
 							RET				 
+;==================================================================================================
+;ColisaoTiro
+;Entrada:posicao atual do tiro
+;Saidas: apaga flag de tiro no ecra
+;trata consoante a colisao que houver
+;Efeitos: depende da colisao
+;	-colisao com nave: fim de jogo
+;	-colisao com asteroide: chama subrotina de tratamento da colisao do tiro com asteroide
+;	-colisao com buraco negro:chama subrotina de tratamento da colisao do tiro com asteroide
+;==================================================================================================
 
 ColisaoTiro:			PUSH R1
 							PUSH R2
@@ -874,7 +929,13 @@ MoveTiroFim:      MOV R2,R0
 						   POP R2
 						   POP R1
                            RET						   
-
+;=================================================
+;NovoTiro
+;Entrada:posicao do tiro
+;Saida:atualizacao da posicao do tiro
+;	flag de tiro em ecra acionada
+;Efeitos: aparecimento do tiro no ecra
+;=================================================
 NovoTiro:  		CMP M[Tiro_Existe],R0
 						BR.Z NovoTiroEnd	
                         INC M[POS_Tiro]	
@@ -896,7 +957,12 @@ DesenhaTiro:PUSH R1
 NoTiro: MOV M[Tiro_Existe],R0
             MOV M[POS_Tiro],R0
             RET
-
+;========================================================================================
+;TiroAst
+;Entrada:posicao do tiro
+;Saidas:incremento da pontuacao, decremento do numero de asteroides
+;Efeitos:desaparecimento do tiro e do asteroide no ecra,acende o lcd, display e incrementado
+;===========================================================================================
 TiroAst: 	 PUSH R1
                  PUSH R2
                  PUSH R3
@@ -923,9 +989,12 @@ TiroBuraco:PUSH R1
 				 POP R1				 
                  RET
 				 
-;=======================================
+;==================================================
 ;Display -pontuacao
-;=======================================
+;Entrada:valores da pontuacao
+;Saida:-----
+;Efeito: escrita no display dos valores da pontuacao
+;==================================================
 EscDisplay:	PUSH R1
 				PUSH R2
 		PUSH R3
